@@ -1,0 +1,28 @@
+import networkx as nx
+
+def convert_supergraph(supergraph):
+    new_supergraph = nx.Graph()
+
+    # Iterate through vertices in the original supergraph
+    for vertex in supergraph.nodes():
+        values = supergraph.nodes[vertex]
+
+        # Create a new node and add properties based on vertex values
+        new_supergraph.add_node(vertex, **values)
+
+        # Connect the new node to the nodes corresponding to the vertices it was formed from (node A and B)
+        neighbors = supergraph.neighbors(vertex)
+        for neighbor in neighbors:
+            new_supergraph.add_edge(vertex, neighbor)
+
+        # Connect the new node to nodes made from the vertices of neighboring nodes
+        for neighbor in neighbors:
+            neighbor_neighbors = supergraph.neighbors(neighbor)
+            for neighbor_neighbor in neighbor_neighbors:
+                new_supergraph.add_edge(vertex, neighbor_neighbor)
+
+    return new_supergraph
+
+# Example usage:
+original_supergraph = nx.Graph()  # Replace with your original supergraph
+new_supergraph = convert_supergraph(original_supergraph)
