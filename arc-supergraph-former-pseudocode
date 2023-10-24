@@ -1,0 +1,45 @@
+import networkx as nx
+
+def connect_segments(image_a_segments, image_b_segments):
+    supergraph = nx.Graph()
+
+    # Connect segments that are neighbors in the same image
+    for i in range(len(image_a_segments)):
+        for j in range(len(image_a_segments[i])):
+            a_segment = image_a_segments[i][j]
+
+            # Connect to the same image segments that are neighbors
+            for dx in [-1, 0, 1]:
+                for dy in [-1, 0, 1]:
+                    if dx == 0 and dy == 0:
+                        continue  # Skip the segment itself
+                    ni, nj = i + dx, j + dy
+                    if 0 <= ni < len(image_a_segments) and 0 <= nj < len(image_a_segments[ni]):
+                        b_segment = image_a_segments[ni][nj]
+                        supergraph.add_edge(a_segment, b_segment)
+
+            # Connect to its counterpart in the other image
+            if i < len(image_b_segments):
+                b_segment = image_b_segments[i][j]
+                supergraph.add_edge(a_segment, b_segment)
+
+    # Connect segments with the same properties in both images
+    for i in range(len(image_a_segments)):
+        for j in range(len(image_a_segments[i])):
+            a_segment = image_a_segments[i][j]
+            if i < len(image_b_segments):
+                b_segment = image_b_segments[i][j]
+                # Check if segments have any property in common
+                a_properties = set(a_segment.nodes(data=True))
+                b_properties = set(b_segment.nodes(data=True))
+                common_properties = a_properties.intersection(b_properties)
+                if common_properties:
+                    supergraph.add_edge(a_segment, b_segment)
+
+    return supergraph
+
+# Example usage:
+graph_a = []  # Replace with the segment nodes of image A
+graph_b = []  # Replace with the segment nodes of image B
+
+supergraph = connect_segments(graph_a, graph_b)
