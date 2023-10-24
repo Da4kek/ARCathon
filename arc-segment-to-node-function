@@ -1,0 +1,114 @@
+import json
+import math
+import networkx as nx
+
+def load_json_file(file_path):
+    with open(file_path, 'r') as json_file:
+        data = json.load(json_file)
+    return data
+
+def calculate_edge_length(edge):
+    x1, y1, x2, y2 = edge
+    return math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
+
+def calculate_edge_angle(edge1, edge2):
+    x1, y1, x2, y2 = edge1
+    x3, y3, x4, y4 = edge2
+    angle = math.atan2(x2 - x1, y2 - y1) - math.atan2(x4 - x3, y4 - y3)
+    return math.degrees(angle)  # Convert to degrees
+
+def segment_json_images(file_a, file_b):
+    image_a = load_json_file(file_a)
+    image_b = load_json_file(file_b)
+
+    def get_color(x, y, image):
+        return image[y][x]
+
+    def find_neighbors(x, y, image, width, height):
+        neighbors = []
+        if x > 0:
+            neighbors.append((x - 1, y))
+        if x < width - 1:
+            neighbors.append((x + 1, y))
+        if y > 0:
+            neighbors.append((x, y - 1))
+        if y < height - 1:
+            neighbors.append((x, y + 1))
+        return neighbors
+
+    def dfs(x, y, image, segment, visited, color, width, height):
+        if (x, y) in visited:
+            return
+        visited.add((x, y))
+        current_color = get_color(x, y, image)
+        if current_color != color:
+            return
+        segment.append((x, y))
+        neighbors = find_neighbors(x, y, image, width, height)
+        for nx, ny in neighbors:
+            dfs(nx, ny, image, segment, visited, color, width, height)
+
+    def find_segments(image):
+        width = len(image[0])
+        height = len(image)
+        segments = []
+        visited = set()
+
+        for y in range(height):
+            for x in range(width):
+                if (x, y) not in visited:
+                    color = get_color(x, y, image)
+                    segment = []
+                    dfs(x, y, image, segment, visited, color, width, height)
+                    segments.append(segment)
+        return segments
+
+    def create_segment_node(segment, image):
+        G = nx.Graph()
+        color = get_color(segment[0][0], segment[0][1], image)
+        G.add_node('segment', color=color, edges=[])
+
+        for i in range(len(segment)):
+            edge = (segment[i-1][0], segment[i-1][1], segment[i][0], segment[i][1])
+            edge_properties = {
+                'pixels': edge,
+                'length': calculate_edge_length(edge),
+                'x_coordinates': [edge[0], edge[2]],
+                'y_coordinates': [edge[1], edge[3]
+            }
+            G.node['segment']['edges'].append(edge_properties)
+
+        G.node['segment']['num_edges'] = len(G.node['segment']['edges'])
+
+        # Calculate edge angles
+        for i in range(len(G.node['segment']['edges']) - 1):
+            edge1 = G.node['segment']['edges'][i]['pixels']
+            edge2 = G.node['segment']['edges'][i + 1]['pixels']
+            angle = calculate_edge_angle(edge1, edge2)
+            G.node['segment']['edges'][i]['angle'] = angle
+
+        return G
+
+    segments_a = find_segments(image_a)
+    segments_b = find_segments(image_b)
+    graph_a = [create_segment_node(segment, image_a) for segment in segments_a]
+    graph_b = [create_segment_node(segment, image_b) for segment in segments_b]
+
+    return graph_a, graph_b
+
+# Example usage:
+file_a = 'image_a.json'
+file_b = 'image_b.json'
+graphs_a, graphs_b = segment_json_images(file_a, file_b)
+
+# Access properties of the nodes in the graphs
+for graph in graphs_a:
+    for node, data in graph.nodes(data=True):
+        print("Color:", data['color'])
+        print("Number of Edges:", data['num_edges'])
+        for edge in data['edges']:
+            print("Edge Pixels:", edge['pixels'])
+            print("Edge Length:", edge['length'])
+            print("Edge Angle:", edge['angle'])
+            print("Edge X Coordinates:", edge['x_coordinates'])
+            print("Edge Y Coordinates:", edge['y_coordinates'])
