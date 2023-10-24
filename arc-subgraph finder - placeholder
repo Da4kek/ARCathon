@@ -1,0 +1,20 @@
+import networkx as nx
+from itertools import combinations
+
+def generate_all_subgraphs(supergraph):
+    all_subgraphs = []
+
+    def generate_subgraphs(graph, k):
+        for subgraph_nodes in combinations(graph.nodes, k):
+            subgraph = graph.subgraph(subgraph_nodes)
+            all_subgraphs.append(subgraph)
+
+    for k in range(1, len(supergraph) + 1):
+        generate_subgraphs(supergraph, k)
+
+    return all_subgraphs
+
+# Example usage:
+supergraph = nx.Graph()  # Replace with your supergraph
+all_subgraphs = generate_all_subgraphs(supergraph)
+//(not ideal merely a functional placeholder for now)
